@@ -4,10 +4,14 @@ from flask_bcrypt import Bcrypt
 from config import Config
 
 app = Flask(__name__)
-app.config.from_object(Config)
+app.config["MONGO_URI"] = Config.MONGO_URI
+# Initialize KindoAPI
 
 mongo = PyMongo(app)
 bcrypt = Bcrypt(app)
+
+# Initialize KindoAPI with the API key from the config file
+kindo_api = KindoAPI(api_key=Config.KINDO_API_KEY)
 
 # Signup API
 @app.route('/api/signup', methods=['POST'])
@@ -41,3 +45,5 @@ def login():
 
 if __name__ == "__main__":
     app.run(debug=True)
+        # Call the Kindo API
+    #response = kindo_api.call_kindo_api(model=model, messages=messages)

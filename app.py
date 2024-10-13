@@ -150,8 +150,8 @@ def process_slides(input_prompt, course_id, username):
     slides = presentation_text.split('\n\n')
 
     slides = [
-    re.sub(r'#\s*#', '#', slide.replace('**', '').strip())  # Remove '**', strip whitespace, and replace multiple '#' with one
-    for slide in slides if re.search(r'[a-zA-Z]', slide)  # Keep slides that contain at least one alphabet
+        re.sub(r'#{2,}', '', slide.replace('**', '').strip())  # Remove two or more consecutive '#'
+        for slide in slides if re.search(r'[a-zA-Z]', slide)  # Keep slides that contain at least one alphabet
     ]
 
     # Remove empty or whitespace-only strings

@@ -192,7 +192,9 @@ def process_slides(input_prompt, course_id, username):
             image_data = hf_client.generate_image(image_prompt, model_name)
             if image_data:
                 # Step 2: Save the image temporarily
-                file_name = f"{input_prompt.replace(' ', '_')}{slide_number}.png"
+                # Remove special characters except underscore
+                sanitized_name = re.sub(r'[^\w_]', '', input_prompt)
+                file_name = f"{sanitized_name.replace(' ', '_')}{slide_number}.png"
                 local_file_path = f"./tmp/{file_name}"
 
                 with open(local_file_path, "wb") as file:

@@ -159,8 +159,8 @@ def process_slides(input_prompt, course_id, username):
 
         response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)
         presentation_text = response.json()['choices'][0]['message']['content']
-        mongo.db.course_text.insert_one({'courseId':course_id, 'text':presentation_text})
-        print(presentation_text)
+    mongo.db.course_text.insert_one({'courseId':course_id, 'text':presentation_text})
+    print(presentation_text)
     
     # Split the presentation text into slides
     slides = presentation_text.split('\n\n')
@@ -424,7 +424,7 @@ def ask_question():
     courseId = data.get('courseId')
 
     # Find the document where the key 'courseId' exists
-    course_text_data = mongo.db.coursecontent.find_one({"courseId": course_id})
+    course_text_data = mongo.db.course_text.find_one({"courseId": courseId})
 
     if not course_text_data:
         return jsonify({"error": "Course not found."}), 404
@@ -436,7 +436,7 @@ def ask_question():
     # Call Kindo API with the model and the prompt
     model_name = 'azure/gpt-4o'
     messages = [{"role": "user", "content": prompt}]
-    response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=100)
+    response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=2000)
     answer_text = ""
     if 'error' not in response:
         answer_text = response.json()['choices'][0]['message']['content']
@@ -455,7 +455,7 @@ def generate_quiz():
     courseId = data.get('courseId')
     
     # Find the document where the key 'courseId' exists
-    course_text_data = mongo.db.coursecontent.find_one({"courseId": course_id})
+    course_text_data = mongo.db.course_text.find_one({"courseId": courseId})
 
     if not course_text_data:
         return jsonify({"error": "Course not found."}), 404
@@ -467,7 +467,7 @@ def generate_quiz():
     # Call Kindo API with the model and the prompt
     model_name = 'azure/gpt-4o'
     messages = [{"role": "user", "content": prompt}]
-    response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=100)
+    response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=2000)
     quiz_text = ""
     if 'error' not in response:
         quiz_text = response.json()['choices'][0]['message']['content']

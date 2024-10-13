@@ -159,7 +159,7 @@ def process_slides(input_prompt, course_id, username):
 
         response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)
         presentation_text = response.json()['choices'][0]['message']['content']
-        mongo.db.course_text.insert_one({course_id:presentation_text})
+        mongo.db.course_text.insert_one({'courseId':course_id, 'text':presentation_text})
         print(presentation_text)
     
     # Split the presentation text into slides
@@ -424,14 +424,13 @@ def ask_question():
     courseId = data.get('courseId')
 
     # Find the document where the key 'courseId' exists
-    document = mongo.db.course_text.find_one({courseId: {"$exists": True}})
-    course_id_text = ""
-    # Check if a document is found and get the value of 'courseId'
-    if document and courseId in document:
-        course_id_text = document[courseId]
-        print("Found course id text"+str(course_id_text))
-    else:
-        print("No document with 'courseId' found.")
+    course_text_data = mongo.db.coursecontent.find_one({"courseId": course_id})
+
+    if not course_text_data:
+        return jsonify({"error": "Course not found."}), 404
+
+    course_id_text = course_text_data.get("text", "")
+    print("course_id_text:"+str(course_id_text))
     
     prompt = f"Answer the Question '{question}' in short based on the text: {course_id_text}"
     # Call Kindo API with the model and the prompt
@@ -454,16 +453,15 @@ def generate_quiz():
      # Get the text input from the request
     data = request.json
     courseId = data.get('courseId')
-
+    
     # Find the document where the key 'courseId' exists
-    document = mongo.db.course_text.find_one({courseId: {"$exists": True}})
-    course_id_text = ""
-    # Check if a document is found and get the value of 'courseId'
-    if document and courseId in document:
-        course_id_text = document[courseId]
-        print("Found course id text"+str(course_id_text))
-    else:
-        print("No document with 'courseId' found.")
+    course_text_data = mongo.db.coursecontent.find_one({"courseId": course_id})
+
+    if not course_text_data:
+        return jsonify({"error": "Course not found."}), 404
+
+    course_id_text = course_text_data.get("text", "")
+    print("course_id_text:"+str(course_id_text))    
     
     prompt = f"Create a Multiple choice quiz that has a single answer generating 3 components. Give me the components in '-' seperated manner with no numbering. Here's the list: 1. The quiz question. 2. All the 4 options as A. B. C. D. newline seperated. 3. The correct option if they are numbered A,B,C,D in order, give me the correct option alphabet only. , it should be totally based on the text and nothing from outside: {course_id_text}"
     # Call Kindo API with the model and the prompt

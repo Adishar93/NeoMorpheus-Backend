@@ -162,7 +162,7 @@ def process_slides(input_prompt, course_id, username):
             upsert=True  # Create the course document if it doesn't exist
         )
         model_name = "CompVis/stable-diffusion-v1-4"
-        image_data = client.generate_image(slide_data, model_name)
+        #image_data = client.generate_image(slide_data, model_name)
 
         # Optionally, you can also log or print the slide data for debugging
         print(f"Processed slide {slide_number + 1}: {slide_content}")

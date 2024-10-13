@@ -138,7 +138,7 @@ def process_slides(input_prompt, course_id, username):
     age = user.get('age')
     is_professional = user.get('working_cybersecurity_professional', False)
     professional_status = "a cybersecurity professional" if is_professional else "not a cybersecurity professional"
-    prompt = f"Generate a well designed course as paragraphs on topic '{input_prompt}' curated for someone who is {age} years old and {professional_status} based on the following information(avoid special characters like '*' or '#' keep it plain text with basic formatting):\n{white_rabbit_knowledge_text}"
+    prompt = f"Generate a well designed course as paragraphs(word limit on each paragraph is 20) on topic '{input_prompt}' curated for someone who is {age} years old and {professional_status} based on the following information(avoid special characters like '*' or '#' keep it plain text with basic formatting):\n{white_rabbit_knowledge_text}"
     messages = [{"role": "user", "content": prompt}]
 
     response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)

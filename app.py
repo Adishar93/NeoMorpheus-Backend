@@ -208,7 +208,6 @@ def process_slides(input_prompt, course_id, username):
                 print(f"Image URL: {public_url}")
             else:
                 print("Image generation failed.")
-                return None
 
         # Update course data
         slide_data = {

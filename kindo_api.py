@@ -5,7 +5,7 @@ class KindoAPI:
         self.api_key = api_key
         self.base_url = "https://llm.kindo.ai/v1/chat/completions"
 
-    def call_kindo_api(self, model, messages, **kwargs):
+    def call_kindo_api(self, model, messages, max_tokens, **kwargs):
         headers = {
             "api-key": self.api_key,
             "content-type": "application/json",
@@ -15,6 +15,7 @@ class KindoAPI:
         data = {
             "model": model,
             "messages": messages,
+            "max_tokens":max_tokens
         }
 
         # Add optional parameters if any
@@ -28,7 +29,7 @@ class KindoAPI:
             response.raise_for_status()
 
             # Return the JSON response if successful
-            return response.json()
+            return response
 
         except requests.exceptions.HTTPError as http_err:
             # Handle HTTP error responses

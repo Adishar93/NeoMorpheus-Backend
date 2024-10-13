@@ -113,6 +113,18 @@ def get_recommended_prompts():
 # Background task to process slides and save to MongoDB
 def process_slides(input_prompt, course_id, username):
 
+    # Save the course data in MongoDB
+    course_data = {
+        "courseId": course_id,
+        "title": input_prompt.capitalize(),
+        "totalSlides": 100,
+        "slides": [],
+    }
+
+    mongo.db.coursecontent.insert_one(
+            course_data
+    )
+
     # Call Kindo API with RabbitNeo model and the prompt
     model_name = '/models/WhiteRabbitNeo-33B-DeepSeekCoder'
     prompt = f"Give me information on {input_prompt}"
@@ -157,16 +169,13 @@ def process_slides(input_prompt, course_id, username):
     # Remove empty or whitespace-only strings
     slides = [slide for slide in slides if slide.strip()]
 
-    # Save the course data in MongoDB
-    course_data = {
-        "courseId": course_id,
-        "title": input_prompt.capitalize(),
-        "totalSlides": len(slides),
-        "slides": [],
+    mongo.db.coursecontent.update_one(
+    {"courseId": course_id},  # Filter the document by courseId
+    {
+        "$set": {
+            "totalSlides": len(slides),  # Update the total number of slides
+        }
     }
-
-    mongo.db.coursecontent.insert_one(
-            course_data
     )
 
     # Update user presentation mapping

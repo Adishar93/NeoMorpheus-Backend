@@ -121,6 +121,8 @@ def process_slides(input_prompt, course_id, username):
         white_rabbit_knowledge_text = response.json()['choices'][0]['message']['content']
     else:
         print(f"API call failed: {response['error']}, details: {response.get('details')}")
+        time.sleep(5)
+        process_slides(input_prompt, course_id, username)
         return
 
     model_name = 'azure/gpt-4o'

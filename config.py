@@ -13,3 +13,5 @@ class Config:
     
     # Load other configuration settings
     KINDO_API_KEY = os.getenv('KINDO_API_KEY')
+
+    HUGGING_FACE_API_KEY = os.getenv('HUGGING_FACE_API_KEY')

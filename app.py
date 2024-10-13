@@ -3,6 +3,7 @@ from flask_pymongo import PyMongo
 from flask_bcrypt import Bcrypt
 from config import Config
 from kindo_api import KindoAPI
+from hugging_face_client import HuggingFaceClient 
 import time
 import re
 import threading
@@ -17,6 +18,7 @@ bcrypt = Bcrypt(app)
 
 # Initialize KindoAPI with the API key from the config file
 kindo_api = KindoAPI(api_key=Config.KINDO_API_KEY)
+hf_client = HuggingFaceClient(Config.HUGGING_FACE_API_KEY)
 
 # Signup API
 @app.route('/api/signup', methods=['POST'])
@@ -102,16 +104,34 @@ def get_recommended_prompts():
 
 # Background task to process slides and save to MongoDB
 def process_slides(input_prompt, course_id, username):
-    # Call Kindo API with the model and the prompt
+    # Call Kindo API with RabbitNeo model and the prompt
     model_name = '/models/WhiteRabbitNeo-33B-DeepSeekCoder'
     prompt = f"Give me information on {input_prompt}"
     messages = [{"role": "user", "content": prompt}]
     response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)
+    white_rabbit_knowledge_text = response.json()['choices'][0]['message']['content']
+
+    model_name = 'azure/gpt-4o'
+    # Find the user in the MongoDB database
+    user = mongo.db.users.find_one({'username': username})
+
+    if not user:
+        return jsonify({"error": "User not found"}), 404
+
+    # Extract the user's age and whether they are a cybersecurity professional
+    age = user.get('age')
+    is_professional = user.get('working_cybersecurity_professional', False)
+    professional_status = "a cybersecurity professional" if is_professional else "not a cybersecurity professional"
+    prompt = f"Generate a well designed course as paragraphs on topic '{input_prompt}' curated for someone who is {age} years old and {professional_status} based on the following information:\n{white_rabbit_knowledge_text}"
+    messages = [{"role": "user", "content": prompt}]
+
+    response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)
     presentation_text = response.json()['choices'][0]['message']['content']
+    mongo.db.course_text.insert_one({course_id:presentation_text})
     print(presentation_text)
     
     # Split the presentation text into slides
-    slides = presentation_text.splitlines()
+    slides = presentation_text.split('\n\n')
 
     # Save the course data in MongoDB
     course_data = {
@@ -123,7 +143,7 @@ def process_slides(input_prompt, course_id, username):
     for slide_number, slide_content in enumerate(slides):
         # Simulate slide processing (e.g., generating images, audio, etc.)
         # In production, you would add actual processing logic here
-        time.sleep(5)  # Simulating processing time for each slide
+        time.sleep(1)  # Simulating processing time for each slide
 
         # Update course data
         slide_data = {
@@ -141,6 +161,8 @@ def process_slides(input_prompt, course_id, username):
             {"$push": {"slides": slide_data}},  # Add the new slide to the slides array
             upsert=True  # Create the course document if it doesn't exist
         )
+        model_name = "CompVis/stable-diffusion-v1-4"
+        image_data = client.generate_image(slide_data, model_name)
 
         # Optionally, you can also log or print the slide data for debugging
         print(f"Processed slide {slide_number + 1}: {slide_content}")

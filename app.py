@@ -322,6 +322,24 @@ def get_course_ids(username):
         # Return an error message if the user is not found
         return jsonify({"error": "User not found"}), 404
 
+@app.route('/api/get-course-title', methods=['GET'])
+def get_course_title():
+    # Get the courseId from the request args
+    course_id = request.args.get('courseId')
+
+    if not course_id:
+        return jsonify({"error": "courseId is required"}), 400
+
+    # Search for the courseId in the coursecontent collection
+    course = mongo.db.coursecontent.find_one({"courseId": course_id}, {"_id": 0, "title": 1})
+
+    # If course not found, return default title
+    if course and "title" in course:
+        title = course["title"].capitalize()
+    else:
+        title = "Title Not Found"
+
+    return jsonify({"courseId": course_id, "title": title}), 200
 
 @app.route('/generate-tts', methods=['POST'])
 def generate_tts():

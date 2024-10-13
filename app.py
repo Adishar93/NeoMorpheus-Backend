@@ -5,6 +5,7 @@ from config import Config
 from kindo_api import KindoAPI
 from hugging_face_client import HuggingFaceClient 
 from firebase_handler import FirebaseHandler
+from tts import TTS
 import time
 import re
 import threading
@@ -24,6 +25,7 @@ bcrypt = Bcrypt(app)
 kindo_api = KindoAPI(api_key=Config.KINDO_API_KEY)
 hf_client = HuggingFaceClient(Config.HUGGING_FACE_API_KEY)
 firebase_handler = FirebaseHandler(firebase_cred_path, firebase_bucket_name)
+tts = TTS(Config.TTS_KEY)
 
 
 # Signup API
@@ -316,6 +318,40 @@ def get_course_ids(username):
     else:
         # Return an error message if the user is not found
         return jsonify({"error": "User not found"}), 404
+
+
+@app.route('/generate-tts', methods=['POST'])
+def generate_tts():
+     # Get the text input from the request
+    data = request.json
+    text = data.get('text')
+
+    # Truncate text to 1000 characters if necessary
+    if text:
+        text = text[:1000]  # Keep only the first 1000 characters
+
+    if not text:
+        return jsonify({"error": "Text is required."}), 400
+
+    # Generate MP3 using the TTS API
+    audio_content = tts.generate_audio(text)
+
+    if audio_content is None:
+        return jsonify({"error": "Failed to generate audio."}), 500
+
+    # Save the audio file locally
+    file_name = f"{uuid.uuid4()}.mp3"
+    local_file_path = f"./tmp/{file_name}"
+    with open(local_file_path, 'wb') as f:
+        f.write(audio_content)
+
+    # Upload to Firebase and get public URL
+    mp3_url = firebase_handler.upload_to_firebase(file_name, local_file_path)
+
+    # Optionally delete the local file after upload
+    firebase_handler.delete_local_file(local_file_path)
+
+    return jsonify({"mp3_url": mp3_url}), 200
 
 if __name__ == "__main__":
     app.run(debug=True)

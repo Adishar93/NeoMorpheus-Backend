@@ -149,9 +149,8 @@ def process_slides(input_prompt, course_id, username):
     # Split the presentation text into slides
     slides = presentation_text.split('\n\n')
 
-    # Remove '**' from each slide and filter out slides without any alphabetic characters
     slides = [
-    slide.replace('**', '').strip()  # Remove '**' and strip whitespace
+    re.sub(r'#\s*#', '#', slide.replace('**', '').strip())  # Remove '**', strip whitespace, and replace multiple '#' with one
     for slide in slides if re.search(r'[a-zA-Z]', slide)  # Keep slides that contain at least one alphabet
     ]
 
@@ -259,12 +258,14 @@ def get_slide_status(course_id):
         return jsonify({"error": "Course not found."}), 404
 
     slides_generated = sum(1 for slide in course_data.get("slides", []) if slide)
-
+    title =course_data.get("title", "No Title Found")
+    title = title.capitalize()
     return jsonify({
         "courseId": course_id,
         "slidesGenerated": slides_generated,
         "totalSlides": course_data.get("totalSlides"),
-        "status": "Completed" if slides_generated == course_data.get("totalSlides") else "In Progress"
+        "status": "Completed" if slides_generated == course_data.get("totalSlides") else "In Progress",
+        "title": title
     }), 200
 
 # 4.3 Get Slide

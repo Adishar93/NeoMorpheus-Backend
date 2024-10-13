@@ -463,7 +463,7 @@ def generate_quiz():
     course_id_text = course_text_data.get("text", "")
     print("course_id_text:"+str(course_id_text))    
     
-    prompt = f"Create a Multiple choice quiz that has a single answer generating 3 components. Give me the components in '-' seperated manner with no numbering. Here's the list: 1. The quiz question. 2. All the 4 options as A. B. C. D. newline seperated. 3. The correct option if they are numbered A,B,C,D in order, give me the correct option alphabet only. , it should be totally based on the text and nothing from outside: {course_id_text}"
+    prompt = f"Create a Multiple choice quiz that has a single answer generating 3 components. Give me the components in '#' seperated manner with no numbering. Here's the list: 1. The quiz question. 2. All the 4 options as A. B. C. D. newline seperated. 3. The correct option if they are numbered A,B,C,D in order, give me the correct option alphabet only. , it should be totally based on the text and nothing from outside: {course_id_text}"
     # Call Kindo API with the model and the prompt
     model_name = 'azure/gpt-4o'
     messages = [{"role": "user", "content": prompt}]
@@ -477,7 +477,7 @@ def generate_quiz():
         return jsonify({"error": "Failed to generate quiz."}), 500
     
     # Step 1: Split based on all occurrences of '-'
-    parts = [item.strip() for item in quiz_text.split('-') if item.strip()]  # Remove empty strings after splitting
+    parts = [item.strip() for item in quiz_text.split('#') if item.strip()]  # Remove empty strings after splitting
 
     if len(parts) < 3:
         return jsonify({"error": "Failed to generate quiz. Malformed LLM Response"}), 500

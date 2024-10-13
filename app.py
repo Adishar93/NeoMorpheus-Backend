@@ -5,6 +5,7 @@ from config import Config
 from kindo_api import KindoAPI
 from hugging_face_client import HuggingFaceClient 
 from firebase_handler import FirebaseHandler
+from rag import generate_article
 from tts import TTS
 import time
 import re
@@ -73,7 +74,7 @@ def get_recommended_prompts():
 
     # Extract the user's age and whether they are a cybersecurity professional
     age = user.get('age')
-    is_professional = user.get('working_cybersecurity_professional', False)
+    is_professional = user.get('working_professional', False)
 
     # Create the prompt for Kindo API
     professional_status = "a cybersecurity professional" if is_professional else "not a cybersecurity professional"
@@ -125,38 +126,41 @@ def process_slides(input_prompt, course_id, username):
             course_data
     )
 
-    # Call Kindo API with RabbitNeo model and the prompt
-    model_name = '/models/WhiteRabbitNeo-33B-DeepSeekCoder'
-    prompt = f"Give me information on {input_prompt}"
-    messages = [{"role": "user", "content": prompt}]
-    response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)
-    white_rabbit_knowledge_text = ""
-    if 'error' not in response:
-        white_rabbit_knowledge_text = response.json()['choices'][0]['message']['content']
-    else:
-        print(f"API call failed: {response['error']}, details: {response.get('details')}")
-        time.sleep(5)
-        process_slides(input_prompt, course_id, username)
-        return
-
-    model_name = 'azure/gpt-4o'
-    # Find the user in the MongoDB database
     user = mongo.db.users.find_one({'username': username})
+    if (user.get('working_professional', False)):
+        presentation_text = generate_article(input_prompt)
+    else:
+        # Call Kindo API with RabbitNeo model and the prompt
+        model_name = '/models/WhiteRabbitNeo-33B-DeepSeekCoder'
+        prompt = f"Give me information on {input_prompt}"
+        messages = [{"role": "user", "content": prompt}]
+        response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)
+        white_rabbit_knowledge_text = ""
+        if 'error' not in response:
+            white_rabbit_knowledge_text = response.json()['choices'][0]['message']['content']
+        else:
+            print(f"API call failed: {response['error']}, details: {response.get('details')}")
+            time.sleep(5)
+            process_slides(input_prompt, course_id, username)
+            return
 
-    if not user:
-        return jsonify({"error": "User not found"}), 404
+        model_name = 'azure/gpt-4o'
+        # Find the user in the MongoDB database
 
-    # Extract the user's age and whether they are a cybersecurity professional
-    age = user.get('age')
-    is_professional = user.get('working_cybersecurity_professional', False)
-    professional_status = "a cybersecurity professional" if is_professional else "not a cybersecurity professional"
-    prompt = f"Generate a well designed course as paragraphs(word limit on each paragraph is 20) on topic '{input_prompt}' curated for someone who is {age} years old and {professional_status} based on the following information(avoid special characters like '*' or '#' keep it plain text with basic formatting):\n{white_rabbit_knowledge_text}"
-    messages = [{"role": "user", "content": prompt}]
+        if not user:
+            return jsonify({"error": "User not found"}), 404
 
-    response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)
-    presentation_text = response.json()['choices'][0]['message']['content']
-    mongo.db.course_text.insert_one({course_id:presentation_text})
-    print(presentation_text)
+        # Extract the user's age and whether they are a cybersecurity professional
+        age = user.get('age')
+        is_professional = user.get('working_professional', False)
+        professional_status = "a cybersecurity professional" if is_professional else "not a cybersecurity professional"
+        prompt = f"Generate a well designed course as paragraphs(word limit on each paragraph is 20) on topic '{input_prompt}' curated for someone who is {age} years old and {professional_status} based on the following information(avoid special characters like '*' or '#' keep it plain text with basic formatting):\n{white_rabbit_knowledge_text}"
+        messages = [{"role": "user", "content": prompt}]
+
+        response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=500)
+        presentation_text = response.json()['choices'][0]['message']['content']
+        mongo.db.course_text.insert_one({course_id:presentation_text})
+        print(presentation_text)
     
     # Split the presentation text into slides
     slides = presentation_text.split('\n\n')

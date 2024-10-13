@@ -416,5 +416,36 @@ def generate_tts():
 
     return jsonify({"mp3_url": mp3_url}), 200
 
+@app.route('/api/ask-question', methods=['POST'])
+def ask_question():
+     # Get the text input from the request
+    data = request.json
+    question = data.get('question')
+    courseId = data.get('courseId')
+
+    # Find the document where the key 'courseId' exists
+    document = mongo.db.course_text.find_one({courseId: {"$exists": True}})
+    course_id_text = ""
+    # Check if a document is found and get the value of 'courseId'
+    if document and courseId in document:
+        course_id_text = document[courseId]
+        print("Found course id text"+str(course_id_text))
+    else:
+        print("No document with 'courseId' found.")
+    
+    prompt = f"Answer the Question '{question}' in short based on the text: {course_id_text}"
+    # Call Kindo API with the model and the prompt
+    model_name = 'azure/gpt-4o'
+    messages = [{"role": "user", "content": prompt}]
+    response = kindo_api.call_kindo_api(model=model_name, messages=messages, max_tokens=100)
+    answer_text = ""
+    if 'error' not in response:
+        answer_text = response.json()['choices'][0]['message']['content']
+    else:
+        print(f"API call failed: {response['error']}, details: {response.get('details')}")
+        return jsonify({"error": "Failed to generate answer."}), 500
+
+    return jsonify({"answer": answer_text}), 200
+
 if __name__ == "__main__":
     app.run(debug=True)

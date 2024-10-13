@@ -77,7 +77,7 @@ def get_recommended_prompts():
 
     # Create the prompt for Kindo API
     professional_status = "a cybersecurity professional" if is_professional else "not a cybersecurity professional"
-    prompt = f"Generate 3 small topic names then ':' and then their 100 character descriptions. Each seperated by '_' (make sure no extra text or formatting) in the cybersecurity domain appropriate for someone who is {age} years old and is {professional_status}."
+    prompt = f"Generate 3 small topic names then ':' and then their 100 character descriptions. Each seperated by '_' (make sure no extra text, formatting and no numbering) in the cybersecurity domain appropriate for someone who is {age} years old and is {professional_status}."
 
     # Call Kindo API with the model and the prompt
     model_name = 'azure/gpt-4o'

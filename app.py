@@ -222,12 +222,38 @@ def process_slides(input_prompt, course_id, username):
             else:
                 print("Image generation failed.")
 
+        text = slide_content
+        mp3_url = ""
+
+        # Truncate text to 1000 characters if necessary
+        if text:
+            text = text[:1000]  # Keep only the first 1000 characters
+
+        # Generate MP3 using the TTS API
+        audio_content = tts.generate_audio(text)
+
+        if audio_content is None:
+            print("Failed to generate audio.")
+        else :
+            # Save the audio file locally
+            file_name = f"{uuid.uuid4()}.mp3"
+            local_file_path = f"./tmp/{file_name}"
+            with open(local_file_path, 'wb') as f:
+                f.write(audio_content)
+
+            # Upload to Firebase and get public URL
+            mp3_url = firebase_handler.upload_to_firebase(file_name, local_file_path)
+
+            # Optionally delete the local file after upload
+            firebase_handler.delete_local_file(local_file_path)
+
+
         # Update course data
         slide_data = {
             "slideNumber": slide_number + 1,
             "content": slide_content,
             "images": [public_url],  # Placeholder for image URLs
-            "audio": ""    # Placeholder for audio file URL
+            "audio": mp3_url    # Placeholder for audio file URL
         }
         course_data["slides"].append(slide_data)
         # Save to coursecontent collection

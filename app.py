@@ -140,6 +140,12 @@ def process_slides(input_prompt, course_id, username):
     # Split the presentation text into slides
     slides = presentation_text.split('\n\n')
 
+    # Remove '**' from each slide and filter out slides without any alphabetic characters
+    slides = [
+    slide.replace('**', '').strip()  # Remove '**' and strip whitespace
+    for slide in slides if re.search(r'[a-zA-Z]', slide)  # Keep slides that contain at least one alphabet
+    ]
+
     # Remove empty or whitespace-only strings
     slides = [slide for slide in slides if slide.strip()]
 
